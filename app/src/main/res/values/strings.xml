@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Piggi Player</string>
+    <string name="notification_channel_name">Odtwarzanie</string>
+    <string name="notification_channel_description">Sterowanie odtwarzaniem lokalnej muzyki</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launcher_background">#D7E3FF</color>
+    <color name="launcher_foreground">#0B57D0</color>
+    <color name="notification_icon">#FFFFFF</color>
+    <color name="app_background">#F9F9FF</color>
+    <color name="app_primary">#0B57D0</color>
+</resources>

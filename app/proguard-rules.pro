@@ -1,0 +1,3 @@
+-keep class pl.proszczok.player.cast.** { *; }
+-keep class com.google.android.gms.cast.** { *; }
+-dontwarn org.nanohttpd.**
