@@ -1,6 +1,11 @@
 # Historia zmian
 
-Wersje są numerowane zgodnie z SemVer, a Android rozpoznaje kolejność aktualizacji przez rosnący `versionCode`.
+Android rozpoznaje kolejność aktualizacji przez rosnący `versionCode`; numer widoczny użytkownikowi zapisujemy jako `versionName`.
+
+## 1.01 — 2026-11-01
+
+- testowe wydanie potwierdzające działanie aktualizacji przez GitHub Releases,
+- bez zmian funkcjonalnych względem 1.1.0.
 
 ## 1.1.0 — 2026-11-01
 
