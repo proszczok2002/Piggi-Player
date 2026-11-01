@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Delete
@@ -70,6 +71,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -494,6 +496,7 @@ internal fun SettingsScreen(
     onCheckUpdates: () -> Unit,
 ) {
     val headingFocus = remember { FocusRequester() }
+    val uriHandler = LocalUriHandler.current
     var folderPickerOpen by remember { mutableStateOf(false) }
     var selectedFolderPaths by remember { mutableStateOf<Set<String>>(emptySet()) }
     LaunchedEffect(Unit) { headingFocus.requestFocus() }
@@ -620,6 +623,33 @@ internal fun SettingsScreen(
                     if (viewModel.excludedFolderPaths.isEmpty() && viewModel.excludedTrackIds.isEmpty()) {
                         Text("Brak ręcznych wykluczeń.", style = MaterialTheme.typography.bodyMedium)
                     }
+                    }
+                }
+            }
+        }
+        item {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Wsparcie", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+                    Text(
+                        "Jeśli podoba Ci się Piggi Player, możesz rzucić monetą i wesprzeć dalszy rozwój aplikacji.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    OutlinedButton(
+                        onClick = { uriHandler.openUri("https://paypal.me/proszczok") },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Default.Favorite, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Wesprzyj przez PayPal")
+                    }
+                    OutlinedButton(
+                        onClick = { uriHandler.openUri("https://revolut.me/r_rosiejka") },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Default.AccountBalanceWallet, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Wesprzyj przez Revolut")
                     }
                 }
             }

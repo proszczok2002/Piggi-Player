@@ -13,12 +13,16 @@ android {
         applicationId = "pl.proszczok.player"
         minSdk = 29
         targetSdk = 37
-        versionCode = 16
-        versionName = "1.0.0"
+        versionCode = 17
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
-        buildConfigField("String", "UPDATE_MANIFEST_URL", "\"https://proszczok.pl/Piggi%20Player/piggi-player-update.json\"")
+        buildConfigField(
+            "String",
+            "UPDATE_MANIFEST_URL",
+            "\"https://github.com/proszczok2002/Piggi-Player/releases/latest/download/piggi-player-update.json\"",
+        )
     }
 
     buildFeatures {
@@ -31,22 +35,26 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    val releasePropertiesFile = rootProject.file("keystore.properties")
+    val hasReleaseSigning = releasePropertiesFile.isFile
     val releaseProperties = Properties().apply {
-        rootProject.file("keystore.properties").inputStream().use { load(it) }
+        if (hasReleaseSigning) releasePropertiesFile.inputStream().use { load(it) }
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = rootProject.file(releaseProperties.getProperty("storeFile"))
-            storePassword = releaseProperties.getProperty("storePassword")
-            keyAlias = releaseProperties.getProperty("keyAlias")
-            keyPassword = releaseProperties.getProperty("keyPassword")
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(releaseProperties.getProperty("storeFile"))
+                storePassword = releaseProperties.getProperty("storePassword")
+                keyAlias = releaseProperties.getProperty("keyAlias")
+                keyPassword = releaseProperties.getProperty("keyPassword")
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -82,6 +90,7 @@ dependencies {
     implementation("org.nanohttpd:nanohttpd:2.3.1")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20260814")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

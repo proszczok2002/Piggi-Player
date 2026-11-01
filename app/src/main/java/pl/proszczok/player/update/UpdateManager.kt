@@ -41,35 +41,28 @@ object UpdateManager {
     suspend fun checkResult(): UpdateCheckResult = withContext(Dispatchers.IO) {
         runCatching<UpdateCheckResult> {
             val manifestUrl = URL(BuildConfig.UPDATE_MANIFEST_URL)
+            require(manifestUrl.protocol.equals("https", ignoreCase = true)) {
+                "Źródło aktualizacji musi używać HTTPS"
+            }
             val connection = (manifestUrl.openConnection() as HttpURLConnection).apply {
                 connectTimeout = 8_000
                 readTimeout = 8_000
                 requestMethod = "GET"
+                instanceFollowRedirects = true
                 setRequestProperty("Accept", "application/json")
+                setRequestProperty("Cache-Control", "no-cache")
                 setRequestProperty("User-Agent", "PiggiPlayer/${BuildConfig.VERSION_NAME}")
             }
-            val json = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-            connection.disconnect()
-            val root = JSONObject(json)
-            val versionCode = root.getLong("versionCode")
-            if (versionCode <= BuildConfig.VERSION_CODE) {
-                UpdateCheckResult.UpToDate
-            } else {
-                val apk = root.getString("apk")
-                val sha = root.getString("sha256").lowercase()
-                require(sha.matches(Regex("[0-9a-f]{64}"))) { "Nieprawidłowa suma kontrolna aktualizacji" }
-                UpdateCheckResult.Available(
-                    UpdateInfo(
-                        versionCode = versionCode,
-                        versionName = root.getString("versionName"),
-                        notes = root.optString("notes", "Nowa wersja aplikacji jest gotowa."),
-                        apkUrl = URL(manifestUrl, apk),
-                        sha256 = sha,
-                    ),
-                )
+            val json = try {
+                val status = connection.responseCode
+                require(status in 200..299) { "GitHub zwrócił kod HTTP $status" }
+                connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            } finally {
+                connection.disconnect()
             }
+            UpdateManifestParser.parse(json, manifestUrl, BuildConfig.VERSION_CODE.toLong())
         }.getOrElse {
-            UpdateCheckResult.Failed(it.message ?: "Nie udało się połączyć z serwerem aktualizacji.")
+            UpdateCheckResult.Failed(it.message ?: "Nie udało się połączyć ze źródłem aktualizacji.")
         }
     }
 
@@ -81,10 +74,16 @@ object UpdateManager {
                 connectTimeout = 12_000
                 readTimeout = 30_000
                 requestMethod = "GET"
+                instanceFollowRedirects = true
                 setRequestProperty("User-Agent", "PiggiPlayer/${BuildConfig.VERSION_NAME}")
             }
-            connection.inputStream.use { input -> apk.outputStream().use { output -> input.copyTo(output) } }
-            connection.disconnect()
+            try {
+                val status = connection.responseCode
+                require(status in 200..299) { "GitHub zwrócił kod HTTP $status podczas pobierania APK" }
+                connection.inputStream.use { input -> apk.outputStream().use { output -> input.copyTo(output) } }
+            } finally {
+                connection.disconnect()
+            }
             val actual = apk.inputStream().use { input ->
                 val digest = MessageDigest.getInstance("SHA-256")
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -117,5 +116,34 @@ object UpdateManager {
             }
             InstallResult.Started
         }.getOrElse { InstallResult.Failed(it.message ?: "Nie udało się pobrać aktualizacji.") }
+    }
+}
+
+internal object UpdateManifestParser {
+    fun parse(json: String, manifestUrl: URL, currentVersionCode: Long): UpdateCheckResult {
+        require(manifestUrl.protocol.equals("https", ignoreCase = true)) {
+            "Źródło aktualizacji musi używać HTTPS"
+        }
+        val root = JSONObject(json)
+        val versionCode = root.getLong("versionCode")
+        if (versionCode <= currentVersionCode) return UpdateCheckResult.UpToDate
+
+        val apkUrl = URL(manifestUrl, root.getString("apk"))
+        require(apkUrl.protocol.equals("https", ignoreCase = true)) {
+            "Plik APK musi być pobierany przez HTTPS"
+        }
+        val sha = root.getString("sha256").lowercase()
+        require(sha.matches(Regex("[0-9a-f]{64}"))) {
+            "Nieprawidłowa suma kontrolna aktualizacji"
+        }
+        return UpdateCheckResult.Available(
+            UpdateInfo(
+                versionCode = versionCode,
+                versionName = root.getString("versionName"),
+                notes = root.optString("notes", "Nowa wersja aplikacji jest gotowa."),
+                apkUrl = apkUrl,
+                sha256 = sha,
+            ),
+        )
     }
 }

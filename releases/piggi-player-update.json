@@ -1,0 +1,7 @@
+{
+    "versionCode":  17,
+    "versionName":  "1.1.0",
+    "apk":  "Piggi-Player-1.1.0.apk",
+    "sha256":  "4be530398d8bac0280712a8065ffff2e446b324fbcd71f44154388727cfabba6",
+    "notes":  "Wersja 1.1.0: aktualizacje bezpośrednio z GitHub Releases, bezpieczna weryfikacja HTTPS i SHA-256 oraz nowa sekcja Wsparcie z PayPal i Revolut."
+}

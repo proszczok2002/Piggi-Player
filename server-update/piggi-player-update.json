@@ -1,7 +1,0 @@
-{
-  "versionCode": 16,
-  "versionName": "1.0.15",
-  "apk": "piggi-player-1.0.15-release.apk",
-  "sha256": "3f63c2d9b7f23c10c7faf87d29568d2a592e830186c99cd5904b60c9ece8fc7a",
-  "notes": "Wersja 1.0.15: stabilniejsze przełączanie Chromecast ↔ telefon, ponawianie lokalnego serwera audio, bezpieczne odtworzenie pełnej kolejki, systemowy przełącznik wyjścia i sesja multimediów zgodna z Media3. Działa od Androida 10 (API 29)."
-}
