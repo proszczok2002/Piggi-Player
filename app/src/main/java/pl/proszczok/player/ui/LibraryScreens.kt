@@ -88,6 +88,7 @@ import pl.proszczok.player.BuildConfig
 import pl.proszczok.player.data.AudioTrack
 import pl.proszczok.player.data.Playlist
 import pl.proszczok.player.data.asTime
+import pl.proszczok.player.data.asSpokenTime
 import pl.proszczok.player.ui.theme.AppThemeMode
 
 private enum class LibraryTab(val label: String) {
@@ -289,9 +290,14 @@ private fun TrackRow(track: AudioTrack, queue: List<AudioTrack>, viewModel: Play
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).combinedClickable(
             role = Role.Button,
             onClick = { viewModel.play(track, queue) },
+            onClickLabel = "Odtwórz utwór",
             onLongClick = { menu = true },
             onLongClickLabel = "Otwórz menu utworu",
-        ).padding(horizontal = 8.dp, vertical = 6.dp),
+        ).semantics {
+            stateDescription = if (viewModel.currentTrack?.id == track.id) {
+                if (viewModel.isPlaying) "Teraz odtwarzane" else "Odtwarzanie wstrzymane"
+            } else ""
+        }.padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Surface(
@@ -302,7 +308,9 @@ private fun TrackRow(track: AudioTrack, queue: List<AudioTrack>, viewModel: Play
             TrackArtwork(track, 208, Modifier.fillMaxSize())
         }
         Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f).clearAndSetSemantics {
+            contentDescription = "${track.title}, ${track.artist}, ${track.durationMs.asSpokenTime()}"
+        }) {
             Text(track.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
             Text(
                 "${track.artist} • ${track.durationMs.asTime()}",

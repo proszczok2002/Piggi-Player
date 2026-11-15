@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="pl.proszczok.piggiaudit">
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="37" />
+    <application android:label="Piggi device audit" android:debuggable="true" />
+    <instrumentation android:name=".AuditInstrumentation" android:targetPackage="pl.proszczok.piggiaudit" />
+</manifest>

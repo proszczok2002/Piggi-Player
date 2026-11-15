@@ -22,7 +22,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import org.json.JSONArray
@@ -36,6 +35,7 @@ import pl.proszczok.player.cast.LocalCastMediaItemConverter
 class PlaybackService : MediaSessionService() {
     private lateinit var localPlayer: ExoPlayer
     private lateinit var player: CastPlayer
+    private lateinit var sessionPlayer: CircularQueuePlayer
     private lateinit var mediaSession: MediaSession
     private lateinit var castConverter: LocalCastMediaItemConverter
     private var lastLocalTransferState: PlayerTransferState? = null
@@ -130,25 +130,13 @@ class PlaybackService : MediaSessionService() {
     }
 
     private val sessionCallback = object : MediaSession.Callback {
-        @Suppress("DEPRECATION")
-        override fun onPlayerCommandRequest(
-            mediaSession: MediaSession,
+        override fun onConnectAsync(
+            session: MediaSession,
             controller: MediaSession.ControllerInfo,
-            playerCommand: Int,
-        ): Int = when (playerCommand) {
-            Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
-            Player.COMMAND_SEEK_TO_NEXT,
-            -> {
-                seekCircular(forward = true)
-                SessionResult.RESULT_ERROR_NOT_SUPPORTED
-            }
-            Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
-            Player.COMMAND_SEEK_TO_PREVIOUS,
-            -> {
-                seekCircular(forward = false)
-                SessionResult.RESULT_ERROR_NOT_SUPPORTED
-            }
-            else -> SessionResult.RESULT_SUCCESS
+        ): ListenableFuture<MediaSession.ConnectionResult> {
+            val result = MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
+            Log.i(TAG, "Controller ${controller.packageName}: uid=${controller.uid}, trusted=${controller.isTrusted}")
+            return Futures.immediateFuture(result.build())
         }
 
         override fun onPlaybackResumption(
@@ -184,7 +172,7 @@ class PlaybackService : MediaSessionService() {
                 else -> return false
             }
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                seekCircular(forward)
+                if (forward) sessionPlayer.seekToNext() else sessionPlayer.seekToPrevious()
             }
             return true
         }
@@ -229,7 +217,8 @@ class PlaybackService : MediaSessionService() {
             Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        mediaSession = MediaSession.Builder(this, player)
+        sessionPlayer = CircularQueuePlayer(player)
+        mediaSession = MediaSession.Builder(this, sessionPlayer)
             .setCallback(sessionCallback)
             .setSessionActivity(sessionIntent)
             .build()
@@ -251,24 +240,9 @@ class PlaybackService : MediaSessionService() {
         }
         (application as PiggiPlayerApplication).equalizerManager.release()
         if (::mediaSession.isInitialized) mediaSession.release()
-        if (::player.isInitialized) player.release()
+        if (::sessionPlayer.isInitialized) sessionPlayer.release()
         if (::castConverter.isInitialized) castConverter.close()
         super.onDestroy()
-    }
-
-    private fun seekCircular(forward: Boolean) {
-        val currentIndex = player.currentMediaItemIndex
-        val count = player.mediaItemCount
-        if (currentIndex == C.INDEX_UNSET || count < 2) return
-        val media3Index = if (forward) player.nextMediaItemIndex else player.previousMediaItemIndex
-        val targetIndex = if (media3Index != C.INDEX_UNSET && media3Index != currentIndex) {
-            media3Index
-        } else if (forward) {
-            (currentIndex + 1) % count
-        } else {
-            (currentIndex - 1 + count) % count
-        }
-        player.seekTo(targetIndex, 0L)
     }
 
     private fun persistPlaybackState(player: Player, includeQueue: Boolean) {

@@ -56,3 +56,22 @@ fun Long.asTime(): String {
     return if (hours > 0) "%d:%02d:%02d".format(hours, minutes, seconds)
     else "%d:%02d".format(minutes, seconds)
 }
+
+/** Duration rather than a clock time: avoids TalkBack reading 1:30 as 1:30 AM. */
+fun Long.asSpokenTime(): String {
+    val total = coerceAtLeast(0L) / 1000L
+    return buildList {
+        if (total >= 3600) add(spokenQuantity(total / 3600, "godzina", "godziny", "godzin"))
+        if (total >= 60) add(spokenQuantity(total % 3600 / 60, "minuta", "minuty", "minut"))
+        add(spokenQuantity(total % 60, "sekunda", "sekundy", "sekund"))
+    }.joinToString(" ")
+}
+
+private fun spokenQuantity(value: Long, one: String, few: String, many: String): String {
+    val unit = when {
+        value == 1L -> one
+        value % 10 in 2L..4L && value % 100 !in 12L..14L -> few
+        else -> many
+    }
+    return "$value $unit"
+}

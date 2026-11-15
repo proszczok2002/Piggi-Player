@@ -13,8 +13,8 @@ android {
         applicationId = "pl.proszczok.player"
         minSdk = 29
         targetSdk = 37
-        versionCode = 18
-        versionName = "1.01"
+        versionCode = 19
+        versionName = "1.02"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

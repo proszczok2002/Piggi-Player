@@ -2,18 +2,11 @@
 
 package pl.proszczok.player.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import android.app.Activity
 import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -70,6 +63,9 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -101,9 +97,9 @@ fun PlayerApp(
     onAnimationsEnabled: (Boolean) -> Unit,
     viewModel: PlayerViewModel = viewModel(),
 ) {
-    var section by remember { mutableStateOf(Section.LIBRARY) }
-    var searchVisible by remember { mutableStateOf(false) }
-    var fullPlayer by remember { mutableStateOf(false) }
+    var section by rememberSaveable { mutableStateOf(Section.LIBRARY) }
+    var searchVisible by rememberSaveable { mutableStateOf(false) }
+    var fullPlayer by rememberSaveable { mutableStateOf(false) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var updateBusy by remember { mutableStateOf(false) }
     var updateChecking by remember { mutableStateOf(false) }
@@ -116,6 +112,10 @@ fun PlayerApp(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
         viewModel.onMediaOperationAuthorizationResult(result.resultCode == Activity.RESULT_OK)
+    }
+    BackHandler(enabled = searchVisible && !fullPlayer) {
+        searchVisible = false
+        viewModel.query = ""
     }
 
     LaunchedEffect(viewModel.mediaOperationRequest) {
@@ -225,18 +225,9 @@ fun PlayerApp(
         }
     }
 
-    AnimatedVisibility(
-        visible = fullPlayer && viewModel.currentTrack != null,
-        enter = if (animationsEnabled) {
-            slideInVertically(tween(280)) { it } + fadeIn(tween(220))
-        } else {
-            EnterTransition.None
-        },
-        exit = if (animationsEnabled) {
-            slideOutVertically(tween(240)) { it } + fadeOut(tween(180))
-        } else {
-            ExitTransition.None
-        },
+    if (fullPlayer && viewModel.currentTrack != null) Dialog(
+        onDismissRequest = { fullPlayer = false },
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
         viewModel.currentTrack?.let { track ->
             FullPlayerScreen(viewModel, track, animationsEnabled) { fullPlayer = false }

@@ -56,6 +56,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -80,9 +81,11 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -96,6 +99,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pl.proszczok.player.data.AudioTrack
 import pl.proszczok.player.data.asTime
+import pl.proszczok.player.data.asSpokenTime
 import pl.proszczok.player.playback.EqualizerPreset
 import java.util.Locale
 import kotlin.math.abs
@@ -104,9 +108,7 @@ import kotlin.math.roundToInt
 @Composable
 internal fun MiniPlayer(viewModel: PlayerViewModel, track: AudioTrack, onOpen: () -> Unit) {
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp).semantics {
-            liveRegion = LiveRegionMode.Polite
-        },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         shape = RoundedCornerShape(20.dp),
         tonalElevation = 6.dp,
         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -114,7 +116,7 @@ internal fun MiniPlayer(viewModel: PlayerViewModel, track: AudioTrack, onOpen: (
         Row(Modifier.height(80.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 onClick = onOpen,
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(56.dp).semantics { contentDescription = "Otwórz pełny odtwarzacz" },
                 shape = RoundedCornerShape(14.dp),
                 color = MaterialTheme.colorScheme.primaryContainer,
             ) {
@@ -124,9 +126,7 @@ internal fun MiniPlayer(viewModel: PlayerViewModel, track: AudioTrack, onOpen: (
             Column(
                 Modifier.weight(1f).clickable(onClickLabel = "Otwórz pełny odtwarzacz", onClick = onOpen)
                     .padding(vertical = 8.dp)
-                    .semantics {
-                        contentDescription = "Teraz odtwarzane: ${track.title}, ${track.artist}. Otwórz pełny odtwarzacz"
-                    },
+                    .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
             ) {
                 Text(track.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
                 Text(track.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
@@ -170,7 +170,7 @@ internal fun FullPlayerScreen(
     )
     BackHandler(onBack = onDismiss)
     Surface(
-        Modifier.fillMaxSize().graphicsLayer {
+        Modifier.fillMaxSize().semantics { paneTitle = "Teraz odtwarzane" }.graphicsLayer {
             translationY = animatedDismissDragY
             val progress = (animatedDismissDragY / 900f).coerceIn(0f, 1f)
             alpha = 1f - progress * 0.24f
@@ -434,7 +434,7 @@ private fun PlayerArtwork(
                 )
             }
             .semantics {
-                contentDescription = "Okładka utworu ${track.title}. Przesuń w lewo lub w prawo, aby zmienić utwór; przesuń w dół, aby zminimalizować odtwarzacz."
+                contentDescription = "Okładka utworu ${track.title}"
                 customActions = listOf(
                     CustomAccessibilityAction("Następny utwór") { viewModel.swipeToNext(); true },
                     CustomAccessibilityAction("Poprzedni utwór") { viewModel.swipeToPrevious(); true },
@@ -509,22 +509,35 @@ private fun PlayerDetails(
             valueRange = 0f..viewModel.durationMs.coerceAtLeast(1L).toFloat(),
             modifier = Modifier.semantics {
                 contentDescription = "Pozycja odtwarzania"
-                stateDescription = "${viewModel.positionMs.asTime()} z ${viewModel.durationMs.asTime()}"
+                stateDescription = "Pozycja odtwarzania: ${viewModel.positionMs.asSpokenTime()} z ${viewModel.durationMs.asSpokenTime()}"
+                customActions = listOf(
+                    CustomAccessibilityAction("Cofnij o 10 sekund") {
+                        viewModel.seekTo((viewModel.positionMs - 10_000L).coerceAtLeast(0L)); true
+                    },
+                    CustomAccessibilityAction("Przewiń do przodu o 10 sekund") {
+                        viewModel.seekTo((viewModel.positionMs + 10_000L).coerceAtMost(viewModel.durationMs)); true
+                    },
+                )
             },
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(viewModel.positionMs.asTime(), style = MaterialTheme.typography.labelMedium)
-            Text(viewModel.durationMs.asTime(), style = MaterialTheme.typography.labelMedium)
+            Text(viewModel.positionMs.asTime(), style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.clearAndSetSemantics {})
+            Text(viewModel.durationMs.asTime(), style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.clearAndSetSemantics {})
         }
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = viewModel::toggleShuffle, modifier = Modifier.size(48.dp)) {
+            IconToggleButton(checked = viewModel.shuffle, onCheckedChange = { viewModel.toggleShuffle() },
+                modifier = Modifier.size(48.dp).semantics {
+                    stateDescription = if (viewModel.shuffle) "Włączone" else "Wyłączone"
+                }) {
                 Icon(
                     Icons.Default.Shuffle,
-                    if (viewModel.shuffle) "Wyłącz odtwarzanie losowe" else "Włącz odtwarzanie losowe",
+                    "Odtwarzanie losowe",
                     tint = if (viewModel.shuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -541,14 +554,16 @@ private fun PlayerDetails(
             IconButton(onClick = viewModel::next, modifier = Modifier.size(60.dp)) {
                 Icon(Icons.Default.SkipNext, "Następny utwór", Modifier.size(38.dp))
             }
-            IconButton(onClick = viewModel::cycleRepeat, modifier = Modifier.size(48.dp)) {
+            IconButton(onClick = viewModel::cycleRepeat, modifier = Modifier.size(48.dp).semantics {
+                stateDescription = when (viewModel.repeatMode) {
+                    Player.REPEAT_MODE_OFF -> "Wyłączone"
+                    Player.REPEAT_MODE_ALL -> "Cała kolejka"
+                    else -> "Jeden utwór"
+                }
+            }) {
                 Icon(
                     if (viewModel.repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
-                    when (viewModel.repeatMode) {
-                        Player.REPEAT_MODE_OFF -> "Powtarzanie wyłączone"
-                        Player.REPEAT_MODE_ALL -> "Powtarzanie kolejki"
-                        else -> "Powtarzanie jednego utworu"
-                    },
+                    "Zmień tryb powtarzania",
                     tint = if (viewModel.repeatMode == Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
                 )
             }
@@ -560,7 +575,10 @@ private fun PlayerDetails(
             item {
                 AssistChip(
                     onClick = { viewModel.toggleFavorite(track) },
-                    label = { Text(if (track.id in viewModel.favoriteIds) "Ulubiony" else "Ulubione") },
+                    modifier = Modifier.semantics {
+                        contentDescription = if (track.id in viewModel.favoriteIds) "Usuń z ulubionych" else "Dodaj do ulubionych"
+                    },
+                    label = { Text(if (track.id in viewModel.favoriteIds) "Ulubiony" else "Ulubione", Modifier.clearAndSetSemantics {}) },
                     leadingIcon = {
                         Icon(
                             if (track.id in viewModel.favoriteIds) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -581,7 +599,11 @@ private fun PlayerDetails(
                 Box {
                     AssistChip(
                         onClick = { onTimerMenu(true) },
-                        label = { Text(viewModel.sleepTimerMinutes?.let { "$it min" } ?: "Timer") },
+                        modifier = Modifier.semantics {
+                            contentDescription = "Timer snu"
+                            stateDescription = viewModel.sleepTimerMinutes?.let { "$it minut" } ?: "Wyłączony"
+                        },
+                        label = { Text(viewModel.sleepTimerMinutes?.let { "$it min" } ?: "Timer", Modifier.clearAndSetSemantics {}) },
                         leadingIcon = { Icon(Icons.Default.Timer, null, Modifier.size(18.dp)) },
                     )
                     DropdownMenu(expanded = timerMenu, onDismissRequest = { onTimerMenu(false) }) {
@@ -657,7 +679,7 @@ private fun EqualizerDialog(viewModel: PlayerViewModel, onDismiss: () -> Unit) {
                         enabled = enabled,
                         modifier = Modifier.semantics {
                             contentDescription = "Pasmo $frequency"
-                            stateDescription = "${String.format(polishLocale, "%.1f", decibels)} decybela"
+                            stateDescription = "Pasmo $frequency: ${String.format(polishLocale, "%.1f", decibels)} decybela"
                         },
                     )
                 }

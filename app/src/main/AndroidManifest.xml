@@ -15,6 +15,13 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <queries>
+        <!-- Media3 must be able to verify user-enabled media key remappers. -->
+        <intent>
+            <action android:name="android.service.notification.NotificationListenerService" />
+        </intent>
+        <intent>
+            <action android:name="android.accessibilityservice.AccessibilityService" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:mimeType="application/vnd.android.package-archive" />

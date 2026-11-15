@@ -1,7 +1,7 @@
 {
-    "versionCode":  18,
-    "versionName":  "1.01",
-    "apk":  "Piggi-Player-1.01.apk",
-    "sha256":  "1f05bad8164df8cf6b6e6b72652e43c2b3142fd3c6ea15e7716dacab7ad40a12",
-    "notes":  "Wersja testowa 1.01: sprawdzenie aktualizacji przez GitHub Releases; bez zmian funkcjonalnych względem 1.1.0."
+    "versionCode":  19,
+    "versionName":  "1.02",
+    "apk":  "Piggi-Player-1.02.apk",
+    "sha256":  "0a394fa9dca09d69f36b28b609819545e061b15243328e48d534386646b695fd",
+    "notes":  "Poprawki TalkBacka i sterowania utworami przez przyciski głośności, zgodność z uprawnionymi narzędziami takimi jak Pixel Center, przewijanie o 10 sekund i poprawiona nawigacja."
 }

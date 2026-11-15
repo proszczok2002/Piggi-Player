@@ -23,6 +23,8 @@ Instalując aktualizację, nie odinstalowuj poprzedniej wersji — podpis wydawn
 - aktualizacje z GitHub Releases z obowiązkową kontrolą SHA-256,
 - dostępność dla TalkBack i innych czytników ekranu.
 
+Przyciski głośności mogą zmieniać utwory przez narzędzie telefonu (np. Pixel Center lub Sound Assistant), które wysyła standardowe polecenia multimedialne. Skrót trzeba włączyć w tym narzędziu; samo działanie w tle zależy od systemu i jego ustawień. Szczegóły w [opisie sterowania i audytu dostępności](docs/ACCESSIBILITY.md).
+
 ## Aktualizacje
 
 Od wersji 1.1.0 aplikacja pobiera manifest oraz APK bezpośrednio z GitHub Releases. Stabilny punkt wejścia:
@@ -52,6 +54,7 @@ Pełna instrukcja: [docs/BUILDING.md](docs/BUILDING.md).
 - [Zgłaszanie problemów bezpieczeństwa](SECURITY.md)
 - [Historia zmian](CHANGELOG.md)
 - [Współpraca przy projekcie](CONTRIBUTING.md)
+- [Dostępność i przyciski głośności](docs/ACCESSIBILITY.md)
 
 ## Wsparcie
 
